@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mess Menu Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+        .card { max-width: 480px; margin: 0 auto; background: #fff; padding: 24px;
+            border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; }
+        label { display: block; margin-top: 14px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box;
+            border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        button { margin-top: 20px; width: 100%; padding: 12px; background: #2e7d32; color: #fff;
+            border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #1b5e20; }
+        #status { margin-top: 14px; font-weight: bold; }
+        .ok { color: #2e7d32; } .err { color: #c62828; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>Mess Menu</h2>
+
+    <label for="menuDate">Date</label>
+    <input type="date" id="menuDate">
+
+    <label for="breakfast">Breakfast</label>
+    <textarea id="breakfast" rows="2"></textarea>
+
+    <label for="lunch">Lunch</label>
+    <textarea id="lunch" rows="2"></textarea>
+
+    <label for="snacks">Snacks</label>
+    <textarea id="snacks" rows="2"></textarea>
+
+    <label for="dinner">Dinner</label>
+    <textarea id="dinner" rows="2"></textarea>
+
+    <button id="saveBtn">Save Menu</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    const dateInput = document.getElementById("menuDate");
+    const fields = ["breakfast", "lunch", "snacks", "dinner"];
+    const statusBox = document.getElementById("status");
+
+    function show(message, ok) {
+        statusBox.textContent = message;
+        statusBox.className = ok ? "ok" : "err";
+    }
+
+    // default to tomorrow, since the manager usually plans ahead
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    dateInput.value = tomorrow.toISOString().split("T")[0];
+
+    // when the date changes, load the existing menu (if any)
+    async function loadMenu() {
+        fields.forEach(f => document.getElementById(f).value = "");
+        statusBox.textContent = "";
+        try {
+            const res = await fetch("/menus/" + dateInput.value);
+            if (res.ok) {
+                const menu = await res.json();
+                fields.forEach(f => document.getElementById(f).value = menu[f] || "");
+                show("Existing menu loaded. Saving will update it.", true);
+            }
+        } catch (e) {
+            show("Could not reach the server.", false);
+        }
+    }
+    dateInput.addEventListener("change", loadMenu);
+    loadMenu();
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+        const body = { menuDate: dateInput.value };
+        fields.forEach(f => body[f] = document.getElementById(f).value.trim());
+
+        if (!body.menuDate) { show("Please pick a date.", false); return; }
+
+        try {
+            const res = await fetch("/menus", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            if (res.ok) show("Saved menu for " + body.menuDate, true);
+            else show("Save failed (status " + res.status + ").", false);
+        } catch (e) {
+            show("Could not reach the server.", false);
+        }
+    });
+</script>
+</body>
+</html>

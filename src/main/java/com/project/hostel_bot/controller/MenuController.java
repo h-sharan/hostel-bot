@@ -25,6 +25,8 @@ public class MenuController {
 
     @PostMapping
     public Menu saveMenu(@RequestBody Menu menu) {
+        repository.findByMenuDate(menu.getMenuDate())
+                .ifPresent(existing -> menu.setId(existing.getId()));
         return repository.save(menu);
     }
 

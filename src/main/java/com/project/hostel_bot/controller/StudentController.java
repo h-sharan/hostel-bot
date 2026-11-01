@@ -26,17 +26,6 @@ public class StudentController {
     public List<Student> getAll() {
         return repository.findAll();
     }
-    @PostMapping("/seed/{count}")
-    public String seed(@PathVariable int count) {
-        List<Student> list = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            Student s = new Student();
-            s.setName("Test " + i);
-            s.setPhone("9100000" + String.format("%05d", i));
-            list.add(s);
-        }
-        repository.saveAll(list);
-        return "Seeded " + count + " students";
-    }
+
 
 }
